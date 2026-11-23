@@ -1,5 +1,3 @@
-console.log("App iniciada");
-
 /*Ciudades*/
 
 const cities = {
@@ -41,16 +39,25 @@ function message(temp) {
 
 async function getWeather(lat, lon) {
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation_probability`);
-    return await res.json();
+    if (!res.ok) throw new Error("Respuesta meteorológica no válida");
+    return res.json();
 }
 
+let weatherRequest = 0;
+
 async function loadWeather(city) {
+    const request = ++weatherRequest;
+    showCity(city);
+    document.getElementById("weather").innerText = "Cargando el clima…";
+    document.getElementById("message").innerText = "";
     try {
         const c = cities[city];
         const data = await getWeather(c.lat, c.lon);
 
-        const temp = data.current.temperature_2m;
-        const rain = data.current.precipitation_probability;
+        if (request !== weatherRequest) return;
+        const temp = data.current?.temperature_2m;
+        const rain = data.current?.precipitation_probability;
+        if (!Number.isFinite(temp) || !Number.isFinite(rain)) throw new Error("Datos meteorológicos incompletos");
 
         showCity(city, temp);
 
@@ -61,6 +68,7 @@ async function loadWeather(city) {
 
         document.getElementById("message").innerText = message(temp);
     } catch (error) {
+        if (request !== weatherRequest) return;
         document.getElementById("weather").innerText = "Error al cargar el clima";
         document.getElementById("message").innerText = "No se ha podido obtener la información";
     }
@@ -69,21 +77,36 @@ async function loadWeather(city) {
 /*Moneda*/
 
 async function getRate(currency) {
-    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/EUR`);
+    if (currency === "EUR") return 1;
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/EUR");
+    if (!res.ok) throw new Error("Respuesta de cambio no válida");
     const data = await res.json();
-    return data.rates[currency];
+    const rate = data.rates?.[currency];
+    if (!Number.isFinite(rate) || rate <= 0) throw new Error("Tipo de cambio no disponible");
+    return rate;
 }
 
+let conversionRequest = 0;
+
 async function convert(city) {
+    const request = ++conversionRequest;
+    const input = document.getElementById("amount");
+    const output = document.getElementById("result");
+    const amount = input.valueAsNumber;
+    if (!Number.isFinite(amount) || amount < 0) {
+        output.innerText = "Introduce una cantidad válida en euros.";
+        return;
+    }
+    output.innerText = "Consultando el tipo de cambio…";
     try {
-        const amount = document.getElementById("amount").value;
         const rate = await getRate(cities[city].currency);
+        if (request !== conversionRequest) return;
         const result = amount * rate;
 
         document.getElementById("result").innerText =
             `${amount} EUR = ${result.toFixed(2)} ${cities[city].currency}`;
     } catch (error) {
-        document.getElementById("result").innerText = "Error en la conversión";
+        if (request === conversionRequest) output.innerText = "Error en la conversión";
     }
 }
 
@@ -91,6 +114,8 @@ async function convert(city) {
 
 document.getElementById("citySelect").addEventListener("change", (e) => {
     const city = e.target.value;
+    conversionRequest++;
+    document.getElementById("result").innerText = "";
     loadWeather(city);
 });
 

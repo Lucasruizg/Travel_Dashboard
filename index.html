@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Travel Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +13,7 @@
 </header>
 
 <main>
-    <select id="citySelect">
+    <select id="citySelect" aria-label="Ciudad">
         <option>Barcelona</option>
         <option>London</option>
         <option>Paris</option>
@@ -22,11 +23,11 @@
 
     <div id="summary"></div>
 
-    <div id="weather"></div>
+    <div id="weather" role="status"></div>
 
-    <input id="amount" type="number" placeholder="EUR">
+    <input id="amount" type="number" min="0" step="any" aria-label="Cantidad en euros" placeholder="EUR">
     <button id="convert">Convertir</button>
-    <div id="result"></div>
+    <div id="result" role="status"></div>
 
     <div id="message"></div>
 </main>
